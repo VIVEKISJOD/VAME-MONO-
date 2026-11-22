@@ -128,10 +128,10 @@ fun HeroCarousel(vm: MainViewModel) {
                     .padding(end = 16.dp, bottom = 16.dp)
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Pal.accent),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.PlayArrow, null, tint = Pal.onAccent, modifier = Modifier.size(32.dp))
+                Icon(Icons.Filled.PlayArrow, null, tint = Color(0xFF101010), modifier = Modifier.size(32.dp))
             }
         }
         if (slides.size > 1) {
@@ -147,7 +147,7 @@ fun HeroCarousel(vm: MainViewModel) {
                             .padding(horizontal = 3.dp)
                             .size(width = w, height = 6.dp)
                             .clip(CircleShape)
-                            .background(if (i == cur) Pal.accent else Pal.fg.copy(alpha = 0.25f))
+                            .background(if (i == cur) Color.White else Color.White.copy(alpha = 0.25f))
                     )
                 }
             }
@@ -211,7 +211,7 @@ fun RecentStrip(vm: MainViewModel) {
                 Modifier
                     .size(84.dp)
                     .pressScale(0.95f)
-                    .border(if (on) 2.dp else 1.dp, if (on) Pal.accent else Stroke, shape)
+                    .border(if (on) 2.dp else 1.dp, if (on) Color.White else Stroke, shape)
                     .clickable { vm.playOne(s, list) },
                 shape
             )
@@ -248,10 +248,10 @@ fun TrendingList(vm: MainViewModel) {
                     )
                 }
                 Box(
-                    Modifier.size(38.dp).clip(CircleShape).border(1.5.dp, Pal.accent, CircleShape),
+                    Modifier.size(38.dp).clip(CircleShape).border(1.5.dp, Color.White.copy(alpha = 0.7f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Filled.PlayArrow, null, tint = Pal.accent, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(22.dp))
                 }
             }
         }
