@@ -82,7 +82,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.sin
 
-// step73: the player in three styles (Material, Apple, Spotify). NowPlayingScreen calls these.
+// VAME MONO uses a dedicated monochrome player presentation; app-wide appearance settings remain unchanged.
+private const val MONO_PLAYER_STYLE = 1
 
 private fun pfmt(ms: Long): String {
     val s = (ms / 1000L).coerceAtLeast(0L)
@@ -92,7 +93,7 @@ private fun pfmt(ms: Long): String {
 // ---------------- cover area ----------------
 @Composable
 internal fun PlayerCoverArt(vm: MainViewModel, song: Song, w: Dp, h: Dp) {
-    val style = Pal.style
+    val style = MONO_PLAYER_STYLE
     val playing = vm.isPlaying
     val base = if (w < h) w else h
     val side = if (style == 1) base * 0.94f else base
@@ -155,7 +156,7 @@ private fun PIcon(icon: ImageVector, tint: Color, size: Dp = 48.dp, bg: Color? =
 // ---------------- title row ----------------
 @Composable
 internal fun PlayerTitleRow(vm: MainViewModel, song: Song) {
-    val style = Pal.style
+    val style = MONO_PLAYER_STYLE
     val ctx = LocalContext.current
     val liked = vm.isLiked(song)
     Row(
@@ -175,7 +176,7 @@ internal fun PlayerTitleRow(vm: MainViewModel, song: Song) {
         if (style == 1) {
             PIcon(
                 if (liked) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                if (liked) Pal.accent else Color.White
+                Color.White
             ) { vm.toggleLike(song) }
             PIcon(Icons.Filled.MoreHoriz, Color.White) { vm.showMenu = true }
         } else {
@@ -186,7 +187,7 @@ internal fun PlayerTitleRow(vm: MainViewModel, song: Song) {
             Spacer(Modifier.width(4.dp))
             PIcon(
                 if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                if (liked) Pal.accent else Color.White,
+                Color.White,
                 48.dp,
                 if (style == 0) Color(0x22FFFFFF) else null
             ) { vm.toggleLike(song) }
@@ -200,7 +201,7 @@ internal fun PlayerProgress(
     vm: MainViewModel, frac: Float, shownMs: Long, maxMs: Long, quality: String,
     onStart: () -> Unit, onChange: (Float) -> Unit, onEnd: (Float) -> Unit
 ) {
-    val style = Pal.style
+    val style = MONO_PLAYER_STYLE
     Spacer(Modifier.height(10.dp))
     if (style == 0) {
         WavyScrubber(frac, vm.isPlaying, onStart, onChange, onEnd)
@@ -307,7 +308,7 @@ private fun PlayGlyph(vm: MainViewModel, tint: Color, size: Dp) {
 @Composable
 internal fun PlayerControls(vm: MainViewModel) {
     val ctx = LocalContext.current
-    val style = Pal.style
+    val style = MONO_PLAYER_STYLE
     val doShuffle = {
         val ok = vm.shuffleUpNext()
         Toast.makeText(
@@ -315,7 +316,7 @@ internal fun PlayerControls(vm: MainViewModel) {
         ).show()
     }
     val repeatIcon = if (vm.repeat == 2) Icons.Filled.RepeatOne else Icons.Filled.Repeat
-    val repeatTint = if (vm.repeat != 0) Pal.accent else Color.White
+    val repeatTint = Color.White
     if (style == 0) {
         // Material: tonal buttons, the play button changes its shape when it plays
         val r by animateDpAsState(if (vm.isPlaying) 26.dp else 44.dp, spring(dampingRatio = 0.6f, stiffness = 300f), label = "playR")
@@ -405,7 +406,7 @@ private class PItem(val icon: ImageVector, val on: Boolean, val click: () -> Uni
 @Composable
 internal fun PlayerBottomRow(vm: MainViewModel, song: Song, page: Int, onQueue: () -> Unit) {
     val ctx = LocalContext.current
-    val style = Pal.style
+    val style = MONO_PLAYER_STYLE
     val outIcon = when (vm.currentOutput?.kind) {
         AudioOutput.BLUETOOTH -> Icons.Filled.Bluetooth
         AudioOutput.WIRED -> Icons.Filled.Headphones
@@ -449,13 +450,13 @@ internal fun PlayerBottomRow(vm: MainViewModel, song: Song, page: Int, onQueue: 
                 Modifier
                     .size(50.dp)
                     .clip(CircleShape)
-                    .then(if (it.on) Modifier.background(Pal.accent.copy(alpha = 0.22f)) else Modifier)
+                    .then(if (it.on) Modifier.background(Color.White.copy(alpha = 0.16f)) else Modifier)
                     .clickable { it.click() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     it.icon, null,
-                    tint = if (it.on) Pal.accent else Color(0xDDFFFFFF),
+                    tint = Color(0xFFF5F5F5),
                     modifier = Modifier.size(25.dp)
                 )
             }
