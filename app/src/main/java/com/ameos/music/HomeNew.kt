@@ -58,97 +58,89 @@ fun HeroCarousel(vm: MainViewModel) {
     val played = vm.played.toList()
     val slides = ArrayList<HeroSlide>()
     if (rec.isNotEmpty()) {
-        slides.add(HeroSlide("Feel the Vibe", "Your perfect mix for today", rec.first().cover) { vm.play(rec.first(), rec) })
+        slides.add(HeroSlide("Made for this moment", "A mix built around your taste", rec.first().cover) { vm.play(rec.first(), rec) })
     }
     if (played.isNotEmpty()) {
-        val s = played.first()
-        slides.add(HeroSlide(s.title, "Jump back in • " + artistName(s.artist), s.cover) { vm.play(s, played) })
+        val song = played.first()
+        slides.add(HeroSlide("Pick up where you left off", artistName(song.artist), song.cover) { vm.play(song, played) })
     }
     if (liked.isNotEmpty()) {
-        slides.add(HeroSlide("Your likes", liked.size.toString() + " songs you love", liked.first().cover) { vm.play(liked.first(), liked) })
+        slides.add(HeroSlide("Your own collection", liked.size.toString() + " tracks you love", liked.first().cover) { vm.play(liked.first(), liked) })
     }
     var idx by remember { mutableIntStateOf(0) }
     LaunchedEffect(slides.size) {
         while (slides.size > 1) {
-            delay(6000)
+            delay(6500)
             idx = (idx + 1) % slides.size
         }
     }
-    val big = LocalConfiguration.current.screenWidthDp >= 600
-    val shape = RoundedCornerShape(St.cardR + 4.dp)
-    val h = if (big) 300.dp else 232.dp
+    val wide = LocalConfiguration.current.screenWidthDp >= 600
+    val h = if (wide) 360.dp else 310.dp
+    val shape = RoundedCornerShape(28.dp)
     if (slides.isEmpty()) {
         Box(Modifier.fillMaxWidth().height(h).clip(shape).background(shimmerBrush()))
         return
     }
-    val cur = idx.coerceIn(0, slides.size - 1)
+    val cur = idx.coerceIn(0, slides.lastIndex)
     val slide = slides[cur]
     val tick = rememberTick()
     Column(Modifier.fillMaxWidth()) {
         Box(
-            Modifier
-                .fillMaxWidth()
-                .height(h)
-                .pressScale(0.985f)
-                .clip(shape)
-                .background(Pal.surface)
-                .border(1.dp, Stroke, shape)
-                .clickable {
-                    tick()
-                    slide.play()
-                }
+            Modifier.fillMaxWidth().height(h).clip(shape)
+                .background(Color(0xFF171717))
+                .border(1.dp, Color(0x22FFFFFF), shape)
+                .clickable { tick(); slide.play() }
         ) {
-            Crossfade(cur, animationSpec = tween(700), label = "hero") { i ->
+            Crossfade(cur, animationSpec = tween(850), label = "monoHeroArtwork") { i ->
                 Cover(slides.getOrNull(i)?.cover, Modifier.fillMaxSize(), RoundedCornerShape(0.dp), hiRes = true)
             }
             Box(
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.45f to Color(0x22000000),
-                        1f to Color(0xE6050505)
+                        0f to Color(0x22000000),
+                        0.34f to Color(0x12000000),
+                        0.68f to Color(0x99000000),
+                        1f to Color(0xF5000000)
                     )
                 )
             )
             Column(
-                Modifier.align(Alignment.BottomStart).padding(start = 18.dp, bottom = 18.dp, end = 84.dp)
+                Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 20.dp)
             ) {
-                Text(
-                    slide.title, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White,
-                    letterSpacing = (-0.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    slide.sub, fontSize = 13.sp, color = Color(0xCCFFFFFF),
-                    maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
+                Text("V A M E   /   M O N O", fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp, color = Color.White.copy(alpha = 0.86f))
+                Text("THE DAILY EDIT", fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.7.sp, color = Color.White.copy(alpha = 0.62f),
+                    modifier = Modifier.padding(top = 7.dp))
+            }
+            Column(
+                Modifier.align(Alignment.BottomStart).padding(start = 20.dp, end = 88.dp, bottom = 22.dp)
+            ) {
+                Text(slide.title, fontSize = if (wide) 34.sp else 29.sp, lineHeight = 33.sp,
+                    fontWeight = FontWeight.Bold, color = Color.White, letterSpacing = (-0.8).sp,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(slide.sub, fontSize = 13.sp, color = Color(0xFFD0D0D0),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 7.dp))
+                Text("CURATED FOR YOU", fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.6.sp, color = Color(0xFFB0B0B0),
+                    modifier = Modifier.padding(top = 13.dp))
             }
             Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 16.dp)
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
+                Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 22.dp)
+                    .size(56.dp).clip(CircleShape).background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.PlayArrow, null, tint = Color(0xFF101010), modifier = Modifier.size(32.dp))
+                Icon(Icons.Filled.PlayArrow, null, tint = Color(0xFF090909), modifier = Modifier.size(32.dp))
             }
         }
         if (slides.size > 1) {
-            Row(
-                Modifier.fillMaxWidth().padding(top = 12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(Modifier.fillMaxWidth().padding(top = 12.dp),
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 slides.forEachIndexed { i, _ ->
-                    val w by animateDpAsState(if (i == cur) 18.dp else 6.dp, tween(260), label = "dot")
-                    Box(
-                        Modifier
-                            .padding(horizontal = 3.dp)
-                            .size(width = w, height = 6.dp)
-                            .clip(CircleShape)
-                            .background(if (i == cur) Color.White else Color.White.copy(alpha = 0.25f))
-                    )
+                    val w by animateDpAsState(if (i == cur) 22.dp else 5.dp, tween(280), label = "monoHeroDot")
+                    Box(Modifier.padding(horizontal = 3.dp).size(width = w, height = 4.dp)
+                        .clip(CircleShape).background(if (i == cur) Color.White else Color.White.copy(alpha = 0.25f)))
                 }
             }
         }

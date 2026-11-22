@@ -21,13 +21,13 @@ object Pal {
     var look by mutableIntStateOf(0)
 
     // step73: the app style (layout, shapes, spacing): 0 Material, 1 Apple, 2 Spotify. Separate from the look.
-    var style by mutableIntStateOf(2)
+    var style by mutableIntStateOf(1)
 
     // old name: true = the light look. Setting it to false leaves the light look (to Lime).
     var light: Boolean
-        get() = look == 2
+        get() = false
         set(v) {
-            look = if (v) 2 else if (look == 2) 0 else look
+            look = 0
         }
 
     // Settings > Glass (all saved)
@@ -52,107 +52,29 @@ object Pal {
     val onFg: Color get() = if (light) Color.White else Color(0xFF16161A)
 
     // text / icon colour on a filled accent button (dark on lime, white on purple / orange)
-    val onAccent: Color get() = when (look) {
-        0 -> Color(0xFF0C1002)
-        3 -> Color(0xFF1B1315)
-        else -> Color.White
-    }
+    val onAccent: Color get() = Color(0xFF080808)
 
     private fun hsv(s: Float, v: Float, a: Float = 1f): Color =
         Color.hsv(hue.coerceIn(0f, 359.9f), (s * sat).coerceIn(0f, 1f), v.coerceIn(0f, 1f), a)
 
-    val bgTop: Color get() = when (look) {
-        0 -> Color(0xFF121312)
-        1 -> Color(0xFF1D1245)
-        2 -> Color(0xFFF2F2F7)
-        else -> if (amoled) Color.Black else hsv(0.63f, 0.23f)
-    }
-    val bgMid: Color get() = when (look) {
-        0 -> Color(0xFF0B0B0C)
-        1 -> Color(0xFF120B2E)
-        2 -> Color(0xFFF0F0F5)
-        else -> if (amoled) Color.Black else hsv(0.15f, 0.07f)
-    }
-    val bgBot: Color get() = when (look) {
-        0 -> Color(0xFF0A0B09)
-        1 -> Color(0xFF0A0719)
-        2 -> Color(0xFFEEEEF3)
-        else -> if (amoled) Color.Black else hsv(0.15f, 0.04f)
-    }
-    val accent: Color get() = when (look) {
-        0 -> Color(0xFFC6F135)
-        1 -> Color(0xFF8E6BFF)
-        2 -> hsv(0.80f, 0.84f)
-        else -> hsv(0.30f, 1f)
-    }
-    val accentSoft: Color get() = when (look) {
-        0 -> Color(0xFFDDF98A)
-        1 -> Color(0xFFBBA6FF)
-        2 -> hsv(0.55f, 0.95f)
-        else -> hsv(0.22f, 1f)
-    }
-    val accentDeep: Color get() = when (look) {
-        0 -> Color(0xFF55691A)
-        1 -> Color(0xFF4B2FB5)
-        2 -> hsv(0.70f, 0.70f)
-        else -> hsv(0.80f, 0.48f)
-    }
-    val textDim: Color get() = when (look) {
-        0 -> Color(0xFFA5A5AB)
-        1 -> Color(0xFFBDB4DD)
-        2 -> Color(0xFF16161A).copy(alpha = 0.62f)
-        else -> hsv(0.08f, 0.86f)
-    }
-    val muted: Color get() = when (look) {
-        0 -> Color(0xFF76767C)
-        1 -> Color(0xFF8A80B4)
-        2 -> Color(0xFF16161A).copy(alpha = 0.45f)
-        else -> hsv(0.06f, 0.55f)
-    }
-    val surface: Color get() = when (look) {
-        0 -> Color(0xFF171719)
-        1 -> Color(0xFF1D1540)
-        2 -> Color(0xFFE3E3E9)
-        else -> if (mode == 1) Color(0xFF0E0E0E) else if (mode == 2) Color(0xFF111111) else hsv(0.20f, 0.17f)
-    }
-    val surface2: Color get() = when (look) {
-        0 -> Color(0xFF222225)
-        1 -> Color(0xFF2A1E5C)
-        2 -> Color(0xFFD9D9E0)
-        else -> if (mode == 1) Color(0xFF181818) else if (mode == 2) Color(0xFF1C1C1C) else hsv(0.15f, 0.22f)
-    }
-    val miniA: Color get() = hsv(0.80f, 0.36f, 0.82f)
-    val miniB: Color get() = hsv(0.80f, 0.17f, 0.82f)
-    val glassTop: Color get() = when (look) {
-        0 -> Color(0xF21B1B1E)
-        1 -> Color(0x45A58BFF)
-        2 -> Color(0xCCFFFFFF)
-        else -> if (mode == 1) Color(0xFF121212) else if (mode == 2) Color(0x40FFFFFF) else hsv(0.38f, 0.165f, 0.8f)
-    }
-    val glassBottom: Color get() = when (look) {
-        0 -> Color(0xF2141416)
-        1 -> Color(0x1F7C5CFF)
-        2 -> Color(0x99FFFFFF)
-        else -> if (mode == 1) Color(0xFF0C0C0C) else if (mode == 2) Color(0x14FFFFFF) else hsv(0.33f, 0.07f, 0.8f)
-    }
-    val panelTop: Color get() = when (look) {
-        0 -> Color(0xF51D1D20)
-        1 -> Color(0xF2302168)
-        2 -> Color(0xF4F7F7FB)
-        else -> if (mode == 1) Color(0xFF121212) else if (mode == 2) Color(0xF0242424) else hsv(0.25f, 0.22f, 0.94f)
-    }
-    val panelBottom: Color get() = when (look) {
-        0 -> Color(0xF5141416)
-        1 -> Color(0xF2170F3A)
-        2 -> Color(0xF4EEEEF4)
-        else -> if (mode == 1) Color(0xFF0C0C0C) else if (mode == 2) Color(0xF0101010) else hsv(0.33f, 0.12f, 0.94f)
-    }
+    val bgTop: Color get() = Color(0xFF111111)
+    val bgMid: Color get() = Color(0xFF080808)
+    val bgBot: Color get() = Color(0xFF050505)
+    val accent: Color get() = Color(0xFFF2F2F2)
+    val accentSoft: Color get() = Color(0xFFFFFFFF)
+    val accentDeep: Color get() = Color(0xFF8A8A8A)
+    val textDim: Color get() = Color(0xFFAAAAAA)
+    val muted: Color get() = Color(0xFF777777)
+    val surface: Color get() = Color(0xFF171717)
+    val surface2: Color get() = Color(0xFF242424)
+    val miniA: Color get() = Color(0xFF343434)
+    val miniB: Color get() = Color(0xFF191919)
+    val glassTop: Color get() = Color(0xF2222222)
+    val glassBottom: Color get() = Color(0xF2111111)
+    val panelTop: Color get() = Color(0xF51D1D1F)
+    val panelBottom: Color get() = Color(0xF50C0C0D)
     // soft glow in the bottom corner of every page (Lime: lime, Nova: purple)
-    val glow: Color get() = when (look) {
-        0 -> Color(0x26C6F135)
-        1 -> Color(0x668E6BFF)
-        else -> Color.Transparent
-    }
+    val glow: Color get() = Color.Transparent
 
     // colour of the glass tint (Settings > Glass > Tint), or null when it is off
     val tintColor: Color? get() =
@@ -171,8 +93,8 @@ object Pal {
         hue = sp.getFloat("themeHue", 20f)
         sat = sp.getFloat("themeSat", 1f)
         mode = sp.getInt("themeMode", 0).coerceIn(0, 2)
-        look = sp.getInt("themeLook", 0).coerceIn(0, 3)
-        style = sp.getInt("appStyle", 2).coerceIn(0, 2)
+        look = 0
+        style = 1
         glassMat = sp.getInt("glassMat", 2).coerceIn(0, 2)
         glassColour = sp.getFloat("glassColour", 0.70f).coerceIn(0f, 1f)
         glassFrost = sp.getFloat("glassFrost", 4f).coerceIn(0f, 24f)

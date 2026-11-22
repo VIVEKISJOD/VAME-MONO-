@@ -96,9 +96,9 @@ internal fun PlayerCoverArt(vm: MainViewModel, song: Song, w: Dp, h: Dp) {
     val style = MONO_PLAYER_STYLE
     val playing = vm.isPlaying
     val base = if (w < h) w else h
-    val side = if (style == 1) base * 0.94f else base
-    val r = St.playerCoverR
-    val rest = if (style == 1) 0.80f else 0.94f
+    val side = if (style == 1) base * 0.98f else base
+    val r = if (style == 1) 26.dp else St.playerCoverR
+    val rest = if (style == 1) 0.94f else 0.94f
     val sc by animateFloatAsState(
         if (playing) 1f else rest,
         spring(dampingRatio = 0.7f, stiffness = 300f), label = "coverScale"
@@ -121,7 +121,7 @@ internal fun PlayerCoverArt(vm: MainViewModel, song: Song, w: Dp, h: Dp) {
                 scaleX = sc
                 scaleY = sc
             }
-            .then(if (style == 1) Modifier.shadow(28.dp, shape, clip = false) else Modifier)
+            .then(if (style == 1) Modifier.shadow(36.dp, shape, clip = false) else Modifier)
             .clip(shape)
             .border(1.dp, Color(0x22FFFFFF), shape)
     ) {
@@ -165,17 +165,17 @@ internal fun PlayerTitleRow(vm: MainViewModel, song: Song) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                song.title, fontSize = if (style == 1) 22.sp else 24.sp, fontWeight = FontWeight.Bold,
+                song.title, fontSize = if (style == 1) 25.sp else 24.sp, fontWeight = FontWeight.Bold,
                 color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis
             )
             Text(
-                artistName(song.artist), fontSize = 16.sp, color = Color(0xB3FFFFFF),
+                artistName(song.artist), fontSize = 15.sp, color = Color(0xB3FFFFFF),
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
         }
         if (style == 1) {
             PIcon(
-                if (liked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 Color.White
             ) { vm.toggleLike(song) }
             PIcon(Icons.Filled.MoreHoriz, Color.White) { vm.showMenu = true }
@@ -353,24 +353,28 @@ internal fun PlayerControls(vm: MainViewModel) {
             PIcon(repeatIcon, repeatTint, 44.dp) { vm.cycleRepeat() }
         }
     } else if (style == 1) {
-        // Apple: plain big glyphs, then the volume bar
+        // MONO transport: a balanced five-control row with a tactile central play button.
         Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.size(72.dp).clip(CircleShape).clickable { vm.prev() }, contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.SkipPrevious, null, tint = Color.White, modifier = Modifier.size(48.dp))
+                PIcon(Icons.Filled.Shuffle, Color(0xFFBDBDBD), 42.dp) { doShuffle() }
+                Box(Modifier.size(56.dp).clip(CircleShape).clickable { vm.prev() }, contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.SkipPrevious, null, tint = Color.White, modifier = Modifier.size(36.dp))
                 }
-                Box(Modifier.size(88.dp).clip(CircleShape).clickable { vm.toggle() }, contentAlignment = Alignment.Center) {
-                    PlayGlyph(vm, Color.White, 68.dp)
+                Box(
+                    Modifier.size(72.dp).clip(CircleShape).background(Color.White)
+                        .clickable { vm.toggle() },
+                    contentAlignment = Alignment.Center
+                ) { PlayGlyph(vm, Color(0xFF080808), 42.dp) }
+                Box(Modifier.size(56.dp).clip(CircleShape).clickable { vm.next() }, contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.SkipNext, null, tint = Color.White, modifier = Modifier.size(36.dp))
                 }
-                Box(Modifier.size(72.dp).clip(CircleShape).clickable { vm.next() }, contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.SkipNext, null, tint = Color.White, modifier = Modifier.size(48.dp))
-                }
+                PIcon(repeatIcon, repeatTint, 42.dp) { vm.cycleRepeat() }
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             VolumeBar()
         }
     } else {

@@ -620,9 +620,9 @@ fun NowPlayingScreen(vm: MainViewModel) {
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF242424),
-                        Color(0xFF111111),
-                        Color(0xFF050505)
+                        Color(0xFF1A1A1A),
+                        Color(0xFF090909),
+                        Color(0xFF000000)
                     )
                 )
             )
@@ -633,15 +633,10 @@ fun NowPlayingScreen(vm: MainViewModel) {
         // soft blurred cover behind everything (fills wide screens too)
         Cover(
             song.cover,
-            Modifier.fillMaxSize().alpha(0.14f).blur(96.dp),
+            Modifier.fillMaxSize().alpha(0.20f).blur(84.dp),
             RoundedCornerShape(0.dp),
             hiRes = true
         )
-
-        // step73: Apple style = colour waves behind everything
-        if (Pal.style == 1 && CanvasPrefs.on) {
-            CanvasBackdrop(tint, vm.isPlaying, Modifier.fillMaxSize().alpha(0.85f))
-        }
 
         Column(
             Modifier
@@ -650,7 +645,7 @@ fun NowPlayingScreen(vm: MainViewModel) {
                 .width(colW)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 20.dp)
         ) {
             // top: close | page title | menu | output
             val outKind = vm.currentOutput?.kind
