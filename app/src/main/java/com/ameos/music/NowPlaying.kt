@@ -619,14 +619,10 @@ fun NowPlayingScreen(vm: MainViewModel) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    if (Pal.lime) listOf(
-                        lerp(tint, Color.Black, 0.78f), Color(0xFF0B0B0C), Color(0xFF080808)
-                    ) else if (Pal.nova) listOf(
-                        lerp(tint, Color(0xFF1D1245), 0.62f), Color(0xFF120B2E), Color(0xFF0A0719)
-                    ) else listOf(
-                        lerp(tint, Color(0xFF8E8780), 0.45f),
-                        lerp(tint, Color(0xFF5E5852), 0.5f),
-                        lerp(tint, Color(0xFF3A3632), 0.6f)
+                    listOf(
+                        Color(0xFF242424),
+                        Color(0xFF111111),
+                        Color(0xFF050505)
                     )
                 )
             )
@@ -637,7 +633,7 @@ fun NowPlayingScreen(vm: MainViewModel) {
         // soft blurred cover behind everything (fills wide screens too)
         Cover(
             song.cover,
-            Modifier.fillMaxSize().alpha(if (Pal.lime) 0.16f else 0.30f).blur(80.dp),
+            Modifier.fillMaxSize().alpha(0.14f).blur(96.dp),
             RoundedCornerShape(0.dp),
             hiRes = true
         )
