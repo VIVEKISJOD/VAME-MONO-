@@ -357,120 +357,55 @@ fun MiniPlayer(
     track: Boolean = true
 ) {
     val song = vm.current ?: return
-    // tablet held sideways: the side player and the small floating box replace the pill on every page
-    // (force = true is used by the tablet pill and by the pill on top of Settings)
     if (!force && isTabletLandscape()) return
-    // step73: three mini players. Material = tonal card, Apple = frosted bar, Spotify = bar in the cover colour with a heart
-    val style = Pal.style
-    val shape = RoundedCornerShape(St.miniR)
-    val tick = rememberTick()
-    val spotify = style == 2 && !Pal.light
-    val ink = if (spotify) Color.White else inkColor()
-    val tint = rememberCoverTint(song.cover)
-    val enter = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.8f, stiffness = 300f)) }
-    // thin progress line (read only while drawing)
     var frac by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     LaunchedEffect(song.url) {
         while (true) {
             val d = vm.durMs()
-            frac = if (d > 0L) (vm.posMs().toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
-            delay(500)
+            frac = if (d > 0L) (vm.posMs().toFloat() / d).coerceIn(0f, 1f) else 0f
+            delay(400)
         }
     }
-    val lineColor = if (spotify) Color.White else Pal.accent
-    // last known spots; track = false while the dock is folded (the slim row owns PillPos then)
-    val last = remember { arrayOfNulls<androidx.compose.ui.geometry.Rect>(2) }
-    LaunchedEffect(track) {
-        if (track) {
-            last[0]?.let { PillPos.pill = it }
-            last[1]?.let { PillPos.rect = it }
-        }
-    }
+    val shape = RoundedCornerShape(22.dp)
+    val ink = Color.White
     Row(
-        modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .onGloballyPositioned {
-                last[0] = it.boundsInRoot()
-                if (track) PillPos.pill = last[0]
-            }
-            .graphicsLayer {
-                alpha = enter.value.coerceIn(0f, 1f)
-                translationY = (1f - enter.value) * 80f
-            }
-            .pressScale(0.97f)
-            .then(
-                if (spotify) Modifier.clip(shape).background(androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.45f))
-                else if (style == 0) Modifier.clip(shape).background(Pal.surface2)
-                else Modifier.glassBar(shape, blur = true)
-            )
+        modifier.fillMaxWidth().height(72.dp)
+            .onGloballyPositioned { if (track) PillPos.pill = it.boundsInRoot() }
+            .clip(shape)
+            .background(Color(0xFF151515))
+            .border(1.dp, Color(0x24FFFFFF), shape)
             .drawBehind {
-                val h = 3.dp.toPx()
-                drawRect(
-                    lineColor.copy(alpha = 0.9f),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - h),
-                    size = androidx.compose.ui.geometry.Size(size.width * frac, h)
-                )
+                val h = 2.dp.toPx()
+                drawRect(Color.White.copy(alpha = 0.88f),
+                    size = androidx.compose.ui.geometry.Size(size.width * frac, h),
+                    topLeft = androidx.compose.ui.geometry.Offset.Zero)
             }
-            .clickable {
-                tick()
-                val go = onOpen
-                if (go != null) {
-                    go()
-                } else {
-                    vm.showPlayer = !vm.showPlayer
-                }
-            }
-            .padding(horizontal = 10.dp),
+            .clickable { if (onOpen != null) onOpen() else vm.showPlayer = !vm.showPlayer }
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Cover(
-            song.cover,
-            Modifier.size(46.dp).onGloballyPositioned {
-                last[1] = it.boundsInRoot()
-                if (track) PillPos.rect = last[1]
-            },
-            RoundedCornerShape(St.coverR)
-        )
+        Cover(song.cover, Modifier.size(50.dp).clip(RoundedCornerShape(14.dp))
+            .onGloballyPositioned { if (track) PillPos.rect = it.boundsInRoot() },
+            RoundedCornerShape(14.dp), hiRes = true)
         Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                song.title, fontSize = 16.sp, fontWeight = FontWeight.Medium,
-                color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                song.artist, fontSize = 13.sp, color = ink.copy(alpha = 0.6f),
-                maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+            Text(song.title, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(artistName(song.artist), color = Color(0xFF929292), fontSize = 12.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 3.dp))
         }
-        if (spotify) {
-            IconButton(onClick = { vm.toggleLike(song) }) {
-                Icon(
-                    if (vm.isLiked(song)) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    null, tint = if (vm.isLiked(song)) Pal.accent else ink, modifier = Modifier.size(26.dp)
-                )
-            }
+        IconButton(onClick = { vm.toggleLike(song) }) {
+            Icon(if (vm.isLiked(song)) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                null, tint = if (vm.isLiked(song)) Color.White else Color(0xFF8B8B8B))
         }
-        IconButton(onClick = {
-            tick()
-            vm.toggle()
-        }) {
-            if (vm.loading) {
-                CircularProgressIndicator(Modifier.size(22.dp), color = ink, strokeWidth = 2.dp)
-            } else {
-                Crossfade(vm.isPlaying, animationSpec = tween(180), label = "pp") { pl ->
-                    Icon(
-                        if (pl) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        null, tint = ink, modifier = Modifier.size(30.dp)
-                    )
-                }
-            }
+        IconButton(onClick = { vm.toggle() }) {
+            if (vm.loading) CircularProgressIndicator(Modifier.size(21.dp), color = ink, strokeWidth = 2.dp)
+            else Icon(if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                null, tint = ink, modifier = Modifier.size(30.dp))
         }
-        if (!spotify) {
-            IconButton(onClick = { vm.next() }) {
-                Icon(Icons.Filled.SkipNext, null, tint = ink, modifier = Modifier.size(30.dp))
-            }
+        IconButton(onClick = { vm.next() }) {
+            Icon(Icons.Filled.SkipNext, null, tint = ink, modifier = Modifier.size(27.dp))
         }
     }
 }

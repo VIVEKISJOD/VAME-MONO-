@@ -583,181 +583,101 @@ fun NowPlayingScreen(vm: MainViewModel) {
     var dragging by remember { mutableStateOf(false) }
     var dragFrac by remember { mutableFloatStateOf(0f) }
     var quality by remember { mutableStateOf("") }
-    val tint = rememberCoverTint(song.cover)
-    var moving by remember { mutableStateOf(false) } // "Animate cover": slow zoom + drift
-    val ctx = LocalContext.current
     val page = PlayerUi.page
-    DisposableEffect(Unit) {
-        onDispose { PlayerUi.page = 0 }
-    }
-
+    DisposableEffect(Unit) { onDispose { PlayerUi.page = 0 } }
     BackHandler { vm.showPlayer = false }
-    BackHandler(enabled = PlayerUi.page != 0) { PlayerUi.page = 0 }
+    BackHandler(enabled = page != 0) { PlayerUi.page = 0 }
     BackHandler(enabled = showQueue) { showQueue = false }
-
     LaunchedEffect(song.url) {
         while (true) {
             pos = vm.posMs()
             val d = vm.durMs()
             dur = if (d > 0) d else song.durationSec * 1000
             val f = vm.player.audioFormat
-            if (f != null) {
-                val parts = ArrayList<String>()
-                if (f.bitrate > 0) parts.add((f.bitrate / 1000).toString() + " kbps")
-                if (f.sampleRate > 0) {
-                    val sr = f.sampleRate
-                    parts.add((if (sr % 1000 == 0) (sr / 1000).toString() else "%.1f".format(sr / 1000f)) + " kHz")
-                }
-                quality = parts.joinToString(" · ")
-            }
+            quality = if (f == null) "" else listOfNotNull(
+                if (f.bitrate > 0) "${f.bitrate / 1000} kbps" else null,
+                if (f.sampleRate > 0) "${f.sampleRate / 1000} kHz" else null
+            ).joinToString(" · ")
             delay(200)
         }
     }
-
-    BoxWithConstraints(
-        Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF242424),
-                        Color(0xFF101010),
-                        Color(0xFF050505),
-                        Color(0xFF000000)
-                    )
-                )
-            )
-            .blockTaps()
-    ) {
-        val colW = minOf(maxWidth, 560.dp)
-
-        // soft blurred cover behind everything (fills wide screens too)
-        Cover(
-            song.cover,
-            Modifier.fillMaxSize().alpha(0.20f).blur(84.dp),
-            RoundedCornerShape(0.dp),
-            hiRes = true
-        )
-
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xFF050505)).blockTaps()) {
+        val width = minOf(maxWidth, 560.dp)
+        Cover(song.cover, Modifier.fillMaxSize().alpha(0.13f).blur(90.dp), RoundedCornerShape(0.dp), hiRes = true)
+        Box(Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(Color(0xAA111111), Color(0xEE050505), Color.Black))))
         Column(
-            Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxHeight()
-                .width(colW)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 22.dp)
+            Modifier.align(Alignment.TopCenter).width(width).fillMaxHeight()
+                .statusBarsPadding().navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // top: close | page title | menu | output
-            val outKind = vm.currentOutput?.kind
-            val outIcon = when (outKind) {
-                AudioOutput.BLUETOOTH -> Icons.Filled.Bluetooth
-                AudioOutput.WIRED -> Icons.Filled.Headphones
-                else -> Icons.Filled.PhoneAndroid
-            }
-            Row(
-                Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 6.dp).swipeDown { vm.showPlayer = false },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                GlassCircle(48.dp, { vm.showPlayer = false }) {
-                    Icon(Icons.Filled.KeyboardArrowDown, null, tint = Color.White, modifier = Modifier.size(32.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                GlassCircle(44.dp, { vm.showPlayer = false }) {
+                    Icon(Icons.Filled.KeyboardArrowDown, null, tint = Color.White, modifier = Modifier.size(30.dp))
                 }
-                Text(
-                    when (page) {
-                        1 -> "Lyrics"
-                        2 -> "Effects"
-                        3 -> "Info"
-                        else -> artistName(song.artist)
-                    },
-                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White,
-                    textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable(enabled = page == 0) {
-                            vm.showPlayer = false
-                            vm.showLyrics = false
-                            vm.openArtist(song.artist)
-                        }
-                )
-                GlassCircle(48.dp, { vm.showMenu = true }) {
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("V A M E   /   M O N O", color = Color(0xFF858585), fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold, letterSpacing = 2.2.sp)
+                    Text(when(page) { 1 -> "LYRICS"; 2 -> "AUDIO EFFECTS"; 3 -> "TRACK INFO"; else -> "NOW PLAYING" },
+                        color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.4.sp, modifier = Modifier.padding(top = 4.dp))
+                }
+                GlassCircle(44.dp, { vm.showMenu = true }) {
                     Icon(Icons.Filled.MoreHoriz, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
-                Spacer(Modifier.width(8.dp))
-                GlassCircle(48.dp, {
-                    vm.refreshOutputs()
-                    vm.showOutputDialog = true
-                }) {
-                    Icon(outIcon, null, tint = Color.White, modifier = Modifier.size(24.dp))
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.Center) {
+                listOf("COVER", "LYRICS", "EFFECTS", "INFO").forEachIndexed { i, label ->
+                    val selected = page == i
+                    Text(label, color = if (selected) Color.White else Color(0xFF777777),
+                        fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 8.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (selected) Color(0x22FFFFFF) else Color.Transparent)
+                            .clickable { PlayerUi.page = i }.padding(horizontal = 4.dp))
                 }
             }
-
-            // the four pages (swipe left / right, or use the pill at the bottom)
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        var total = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { total = 0f },
-                            onHorizontalDrag = { _, dx -> total += dx },
-                            onDragEnd = {
-                                if (total < -90f) PlayerUi.page = minOf(3, PlayerUi.page + 1)
-                                else if (total > 90f) PlayerUi.page = maxOf(0, PlayerUi.page - 1)
-                            }
-                        )
-                    }
-            ) {
-                Crossfade(targetState = page, animationSpec = tween(240), label = "playerPage") { pg ->
+            Box(Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center) {
+                Crossfade(targetState = page, animationSpec = tween(220), label = "monoPlayerPage") { pg ->
                     when (pg) {
                         1 -> LyricsPage(vm, pos)
                         2 -> EffectsPage(vm)
                         3 -> InfoPage(vm, song, quality)
-                        else -> BoxWithConstraints(
-                            Modifier
-                                .fillMaxSize()
-                                .swipeDown { vm.showPlayer = false }
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) { moving = !moving },
-                            contentAlignment = Alignment.Center
-                        ) {
+                        else -> BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(0.94f),
+                            contentAlignment = Alignment.Center) {
                             PlayerCoverArt(vm, song, maxWidth, maxHeight)
                         }
                     }
                 }
             }
-
-            // step73: title row, progress, controls and bottom row follow the app style (PlayerKit.kt)
-            PlayerTitleRow(vm, song)
-
-            val max = dur.coerceAtLeast(1L)
-            val frac = if (dragging) dragFrac else (pos.toFloat() / max.toFloat()).coerceIn(0f, 1f)
-            val shownMs = (frac * max.toFloat()).toLong()
-            PlayerProgress(
-                vm, frac, shownMs, max, quality,
-                onStart = { dragging = true },
-                onChange = { dragFrac = it },
-                onEnd = { f ->
-                    val t = (f * max.toFloat()).toLong()
-                    vm.seekTo(t)
-                    pos = t
-                    dragging = false
+            Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                    Column(Modifier.weight(1f)) {
+                        Text(song.title, color = Color.White, fontSize = 23.sp, lineHeight = 27.sp,
+                            fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(artistName(song.artist), color = Color(0xFF9B9B9B), fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 5.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    IconButton(onClick = { vm.toggleLike(song) }) {
+                        Icon(if (vm.isLiked(song)) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            null, tint = Color.White, modifier = Modifier.size(25.dp))
+                    }
                 }
-            )
-            PlayerControls(vm)
-            PlayerBottomRow(vm, song, page) { showQueue = true }
+                val max = dur.coerceAtLeast(1L)
+                val frac = if (dragging) dragFrac else (pos.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+                PlayerProgress(vm, frac, (frac * max).toLong(), max, quality,
+                    onStart = { dragging = true }, onChange = { dragFrac = it },
+                    onEnd = { f -> val t = (f * max).toLong(); vm.seekTo(t); pos = t; dragging = false })
+                PlayerControls(vm)
+                PlayerBottomRow(vm, song, page) { showQueue = true }
+            }
         }
-
-        AnimatedVisibility(
-            visible = showQueue,
-            modifier = Modifier.align(Alignment.BottomCenter),
+        AnimatedVisibility(visible = showQueue, modifier = Modifier.align(Alignment.BottomCenter),
             enter = slideInVertically(tween(350)) { it } + fadeIn(tween(250)),
-            exit = slideOutVertically(tween(300)) { it } + fadeOut(tween(200))
-        ) {
+            exit = slideOutVertically(tween(300)) { it } + fadeOut(tween(200))) {
             QueuePanel(vm) { showQueue = false }
         }
     }
