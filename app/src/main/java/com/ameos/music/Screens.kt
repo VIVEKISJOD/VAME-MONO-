@@ -1249,234 +1249,165 @@ private fun StatCard(width: androidx.compose.ui.unit.Dp, label: String, bigText:
 
 @Composable
 fun LibraryScreen(vm: MainViewModel) {
-    val ctx = androidx.compose.ui.platform.LocalContext.current
-    // signed in but the list is empty: load it when the Library opens
     LaunchedEffect(vm.ytSignedIn) {
         if (vm.ytSignedIn && vm.ytPlaylists.isEmpty()) vm.refreshYt()
     }
-    var showAll by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val w = LocalConfiguration.current.screenWidthDp
-    val big = w >= 600
-    val tileSize = if (big) 190.dp else 160.dp
-    val cardW = minOf((w * 0.82f).dp, 420.dp)
-    val rec = androidx.compose.runtime.remember(vm.statMinutes, vm.statPlays) { vm.recap() }
-    val name = vm.userName.ifBlank { vm.ytName }.ifBlank { vm.title }.ifBlank { "VAME" }.uppercase()
-    val year = java.text.SimpleDateFormat("yyyy", java.util.Locale.getDefault()).format(java.util.Date())
-    val since = java.text.SimpleDateFormat("MM / yy", java.util.Locale.getDefault()).format(java.util.Date(vm.statSince))
-    val topArtist = rec.topArtists.firstOrNull()
-    val topSong = rec.topSongs.firstOrNull()
-    val openRecap = { vm.recapOpen = true }
-    val libTab = androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
-
-    // artists: the ones you liked first, then the ones you listen to most
-    val artistTiles = ArrayList<ArtistItem>()
-    artistTiles.addAll(vm.likedArtists)
-    for (a in rec.topArtists) {
-        if (artistTiles.none { it.name.equals(a.name, ignoreCase = true) }) artistTiles.add(ArtistItem(a.name, a.cover))
-    }
-
-    val tiles = ArrayList<LibTile>()
-    tiles.add(LibTile("New playlist", "Save your own mix", null, Icons.Filled.Add, null) {
-        vm.editPlaylistId = null
-        vm.pendingSong = null
-        vm.showPlaylistDialog = true
-    })
-    tiles.add(LibTile("Import playlist", "From a playlist link", null, Icons.Filled.FileDownload, null) {
-        vm.importStatus = ""
-        vm.importedId = null
-        vm.showImportDialog = true
-    })
-    tiles.add(LibTile("Spotify", "Listen, bring into VAME", null, Icons.Filled.Cloud, listOf(Color(0xFF1F9D55), Color(0xFF0B4D2A))) {
-        SpotifyHub.open = true
-    })
-    tiles.add(LibTile(
-        "Liked Songs", vm.liked.size.toString() + " songs", null,
-        Icons.Filled.Favorite, listOf(Color(0xFF8B6CF0), Color(0xFFEF5DA8))
-    ) { vm.likedOpen = true })
-    for (p in vm.playlists) {
-        tiles.add(LibTile(p.name, p.songs.size.toString() + " songs", p.shownCover(), Icons.Filled.LibraryMusic, null) {
-            vm.openPlaylist(p.id)
-        })
-    }
-
-    LazyColumn(contentPadding = ScreenPad) {
-        item {
-            ScreenTitle("Library") {
-                Row(
-                    Modifier.glass(RoundedCornerShape(50)).padding(horizontal = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+    val tileSize = if (w >= 600) 190.dp else 160.dp
+    val libTab = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val recap = remember(vm.statMinutes, vm.statPlays) { vm.recap() }
+    val artists = (vm.likedArtists + recap.topArtists.map { ArtistItem(it.name, it.cover) })
+        .distinctBy { it.name.lowercase() }
+    val member = vm.userName.ifBlank { vm.ytName }.ifBlank { "VAME LISTENER" }
+    Box(Modifier.fillMaxSize().background(Color(0xFF080808))) {
+        LazyColumn(contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 190.dp)) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(bottom = 22.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("YOUR COLLECTION", color = Color(0xFF8D8D8D), fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 2.5.sp)
+                        Text("Library.", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold,
+                            letterSpacing = (-1.5).sp, modifier = Modifier.padding(top = 3.dp))
+                    }
                     IconButton(onClick = { vm.recapOpen = true }) {
-                        Icon(Icons.Filled.History, null, tint = Pal.fg)
+                        Icon(Icons.Filled.AutoAwesome, null, tint = Color.White)
                     }
-                    IconButton(onClick = { vm.showSettings = true }) {
-                        Icon(Icons.Filled.Settings, "Settings", tint = Pal.fg)
+                    GearButton(vm, 42.dp)
+                }
+            }
+            item {
+                val shape = RoundedCornerShape(24.dp)
+                Column(Modifier.fillMaxWidth().clip(shape).background(Color(0xFF171717))
+                    .border(1.dp, Color(0x20FFFFFF), shape).clickable { vm.recapOpen = true }.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("YOUR LISTENING, IN NUMBERS", color = Color(0xFF999999), fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp, modifier = Modifier.weight(1f))
+                        Icon(Icons.Filled.ArrowOutward, null, tint = Color(0xFFAAAAAA), modifier = Modifier.size(17.dp))
                     }
-                }
-            }
-        }
-        item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(top = 6.dp)) {
-                item {
-                    StatCard(
-                        cardW, "YOUR LISTENING EXPERIENCE", vm.statMinutes.toString(), 52, "MINUTES LISTENED",
-                        name, vm.statPlays.toString() + " Plays \u00B7 " + year, since, "MEMBER SINCE", openRecap
-                    )
-                }
-                item {
-                    StatCard(
-                        cardW, "YOUR TOP ARTIST", topArtist?.name ?: "Not yet", 34, "TOP ARTIST",
-                        name, if (topArtist != null) (topArtist.sec / 60).toString() + " min listened" else "Play some songs",
-                        null, null, openRecap
-                    )
-                }
-                item {
-                    StatCard(
-                        cardW, "YOUR TOP SONG", topSong?.title ?: "Not yet", 30, "TOP SONG",
-                        name, topSong?.artist?.let { StatsStore.cleanArtist(it) } ?: "Play some songs",
-                        null, null, openRecap
-                    )
-                }
-            }
-        }
-        // step71: chips + a list like the design (Playlists / Albums / Artists / Downloads)
-        item {
-            KitChips(libTab.intValue, listOf("Playlists", "Albums", "Artists", "Downloads")) {
-                if (it == 3) {
-                    vm.refreshDownloadBytes()
-                    vm.downloadsOpen = true
-                } else {
-                    libTab.intValue = it
-                }
-            }
-        }
-        if (libTab.intValue == 0) {
-            item {
-                LibWideButton("New Playlist", Icons.Filled.Add) {
-                    vm.editPlaylistId = null
-                    vm.pendingSong = null
-                    vm.showPlaylistDialog = true
-                }
-            }
-            item {
-                LibListRow(null, "Liked Songs", vm.liked.size.toString() + " songs") { vm.likedOpen = true }
-            }
-            items(vm.playlists.toList()) { p ->
-                LibListRow(p.shownCover(), p.name, p.songs.size.toString() + " songs") { vm.openPlaylist(p.id) }
-            }
-            item {
-                LibWideButton("Import playlist", Icons.Filled.FileDownload) {
-                    vm.importStatus = ""
-                    vm.importedId = null
-                    vm.showImportDialog = true
-                }
-            }
-            item { LibWideButton("Spotify", Icons.Filled.Cloud) { SpotifyHub.open = true } }
-        } else if (libTab.intValue == 1) {
-            if (vm.savedAlbums.isEmpty()) {
-                item { Text("Albums you save show up here", fontSize = 13.sp, color = Pal.muted, modifier = Modifier.padding(vertical = 16.dp)) }
-            }
-            items(vm.savedAlbums.toList()) { al ->
-                LibListRow(al.cover, al.title, al.artist.ifBlank { "Album" }) { vm.openAlbum(al) }
-            }
-        } else if (libTab.intValue == 2) {
-            if (artistTiles.isEmpty()) {
-                item { Text("Artists you like or listen to a lot show up here", fontSize = 13.sp, color = Pal.muted, modifier = Modifier.padding(vertical = 16.dp)) }
-            }
-            items(artistTiles.take(40)) { a ->
-                LibListRow(a.cover, a.name, "Artist", circle = true) { vm.openArtist(a.name) }
-            }
-        }
-        item { Spacer(Modifier.height(10.dp)) }
-        item {
-            LibRow(Icons.Filled.Download, "Downloads", vm.downloads.size.toString() + " songs for offline") {
-                vm.refreshDownloadBytes()
-                vm.downloadsOpen = true
-            }
-        }
-        item { LibRow(Icons.Filled.Favorite, "Liked songs", vm.liked.size.toString() + " songs") { vm.likedOpen = true } }
-        item { LibRow(Icons.Filled.AutoAwesome, "Your Recap", "Top songs and artists") { vm.recapOpen = true } }
-
-        if (vm.ytSignedIn) {
-            item {
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 26.dp, bottom = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("YouTube Music", fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = Pal.fg)
-                    Text(
-                        if (vm.ytBusy) "Loading..." else "Refresh", fontSize = 16.sp, color = Pal.fg,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .clickable { vm.refreshYt() }
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
-            item {
-                val ytTiles = ArrayList<LibTile>()
-                ytTiles.add(LibTile(
-                    "Liked songs", "On YouTube Music", null,
-                    Icons.Filled.ThumbUp, listOf(Color(0xFFE53935), Color(0xFF8E1B1B))
-                ) { vm.openYtLiked() })
-                for (yp in vm.ytPlaylistsShown) {
-                    ytTiles.add(LibTile(yp.title, yp.subtitle.ifBlank { "Playlist" }, yp.cover, Icons.Filled.LibraryMusic, null) {
-                        vm.openYtPlaylist(yp)
-                    })
-                }
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    items(ytTiles) { t -> PlTile(t, Modifier.width(tileSize)) }
-                }
-            }
-            if (vm.ytArtists.isNotEmpty()) {
-                item {
-                    Text(
-                        "Your YouTube artists", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Pal.fg,
-                        modifier = Modifier.padding(top = 22.dp, bottom = 12.dp)
-                    )
-                }
-                item {
-                    val yar = vm.ytArtists.toList()
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        items(yar) { a ->
-                            PlTile(LibTile(a.name, "Artist", a.cover, Icons.Filled.Person, null) {
-                                vm.openArtist(a.name)
-                            }, Modifier.width(tileSize))
+                    Text(vm.statMinutes.toString(), color = Color.White, fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold, letterSpacing = (-1.5).sp,
+                        modifier = Modifier.padding(top = 8.dp))
+                    Text("minutes listened", color = Color(0xFF999999), fontSize = 13.sp)
+                    Spacer(Modifier.height(18.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text(vm.statPlays.toString(), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Text("PLAYS", color = Color(0xFF777777), fontSize = 9.sp, letterSpacing = 1.5.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(artists.firstOrNull()?.name ?: "Discover", color = Color.White, fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("TOP ARTIST", color = Color(0xFF777777), fontSize = 9.sp, letterSpacing = 1.5.sp)
                         }
                     }
                 }
             }
-            if (vm.ytStatus.startsWith("Library load fail")) {
+            item {
+                Text("YOUR MUSIC", color = Color(0xFF8B8B8B), fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
+                    modifier = Modifier.padding(top = 28.dp, bottom = 12.dp))
+                KitChips(libTab.intValue, listOf("Playlists", "Albums", "Artists", "Downloads")) {
+                    if (it == 3) { vm.refreshDownloadBytes(); vm.downloadsOpen = true }
+                    else libTab.intValue = it
+                }
+            }
+            if (libTab.intValue == 0) {
                 item {
-                    Text(
-                        vm.ytStatus, fontSize = 12.sp, color = Color(0xFFD0453A),
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    LibWideButton("Create a playlist", Icons.Filled.Add) {
+                        vm.editPlaylistId = null; vm.pendingSong = null; vm.showPlaylistDialog = true
+                    }
+                }
+                item { LibListRow(null, "Liked Songs", vm.liked.size.toString() + " tracks") { vm.likedOpen = true } }
+                items(vm.playlists.toList()) { p ->
+                    LibListRow(p.shownCover(), p.name, p.songs.size.toString() + " tracks") { vm.openPlaylist(p.id) }
+                }
+                item {
+                    LibWideButton("Import playlist", Icons.Filled.FileDownload) {
+                        vm.importStatus = ""; vm.importedId = null; vm.showImportDialog = true
+                    }
+                }
+                item { LibWideButton("Spotify library", Icons.Filled.Cloud) { SpotifyHub.open = true } }
+            } else if (libTab.intValue == 1) {
+                if (vm.savedAlbums.isEmpty()) item {
+                    Text("Albums you save will appear here.", color = Color(0xFF888888),
+                        fontSize = 13.sp, modifier = Modifier.padding(vertical = 18.dp))
+                }
+                items(vm.savedAlbums.toList()) { a ->
+                    LibListRow(a.cover, a.title, a.artist.ifBlank { "Album" }) { vm.openAlbum(a) }
+                }
+            } else if (libTab.intValue == 2) {
+                if (artists.isEmpty()) item {
+                    Text("Artists you listen to will appear here.", color = Color(0xFF888888),
+                        fontSize = 13.sp, modifier = Modifier.padding(vertical = 18.dp))
+                }
+                items(artists.take(50)) { a ->
+                    LibListRow(a.cover, a.name, "Artist", circle = true) { vm.openArtist(a.name) }
                 }
             }
-        } else {
             item {
-                LibRow(Icons.Filled.AccountCircle, "Sign in with Google", "Optional: see your YouTube Music library") {
-                    vm.showLogin = true
+                Text("QUICK ACCESS", color = Color(0xFF8B8B8B), fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
+                    modifier = Modifier.padding(top = 28.dp, bottom = 8.dp))
+                LibRow(Icons.Filled.Download, "Downloads", vm.downloads.size.toString() + " tracks available offline") {
+                    vm.refreshDownloadBytes(); vm.downloadsOpen = true
+                }
+                LibRow(Icons.Filled.Favorite, "Liked songs", vm.liked.size.toString() + " tracks") { vm.likedOpen = true }
+                LibRow(Icons.Filled.AutoAwesome, "Your listening recap", "Your top tracks and artists") { vm.recapOpen = true }
+            }
+            if (vm.ytSignedIn) {
+                item {
+                    Row(Modifier.fillMaxWidth().padding(top = 26.dp, bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("YouTube Music", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text("Connected collection", color = Color(0xFF888888), fontSize = 12.sp)
+                        }
+                        Text(if (vm.ytBusy) "Loading" else "Refresh", color = Color.White, fontSize = 12.sp,
+                            modifier = Modifier.clickable { vm.refreshYt() }.padding(8.dp))
+                    }
+                }
+                item {
+                    val tiles = ArrayList<LibTile>()
+                    tiles.add(LibTile("Liked songs", "YouTube Music", null, Icons.Filled.ThumbUp, null) { vm.openYtLiked() })
+                    vm.ytPlaylistsShown.forEach { yp ->
+                        tiles.add(LibTile(yp.title, yp.subtitle.ifBlank { "Playlist" }, yp.cover,
+                            Icons.Filled.LibraryMusic, null) { vm.openYtPlaylist(yp) })
+                    }
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(tiles) { t -> PlTile(t, Modifier.width(tileSize)) }
+                    }
+                }
+                if (vm.ytArtists.isNotEmpty()) {
+                    item { ShelfTitle("Your YouTube artists") }
+                    item {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(vm.ytArtists.toList()) { a ->
+                                PlTile(LibTile(a.name, "Artist", a.cover, Icons.Filled.Person, null) {
+                                    vm.openArtist(a.name)
+                                }, Modifier.width(tileSize))
+                            }
+                        }
+                    }
+                }
+                if (vm.ytStatus.startsWith("Library load fail")) item {
+                    Text(vm.ytStatus, color = Color(0xFFFF8A80), fontSize = 12.sp)
+                }
+            } else {
+                item {
+                    LibRow(Icons.Filled.AccountCircle, "Connect YouTube Music",
+                        "Optional: access your personal music library") { vm.showLogin = true }
                 }
             }
-        }
-
-        if (vm.played.isNotEmpty()) {
-            item {
-                Text(
-                    "Recently played", fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = Pal.fg,
-                    modifier = Modifier.padding(top = 28.dp, bottom = 12.dp)
-                )
-            }
-            item {
-                val list = vm.played.toList().take(12)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    items(list) { s ->
-                        PlTile(LibTile(s.title, s.artist, s.cover, Icons.Filled.MusicNote, null) {
-                            vm.play(s, list)
-                        }, Modifier.width(tileSize))
+            if (vm.played.isNotEmpty()) {
+                item { ShelfTitle("Recently played") }
+                item {
+                    val recent = vm.played.toList().take(14)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(recent) { s ->
+                            PlTile(LibTile(s.title, artistName(s.artist), s.cover, Icons.Filled.MusicNote, null) {
+                                vm.play(s, recent)
+                            }, Modifier.width(tileSize))
+                        }
                     }
                 }
             }
