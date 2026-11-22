@@ -499,56 +499,36 @@ fun goTab(vm: MainViewModel, id: Int) {
 
 @Composable
 fun BottomBar(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    // step73: Material = pill indicator, Apple = frosted bar with accent label, Spotify = plain dark bar, selected = white
-    val style = Pal.style
-    val shape = RoundedCornerShape(St.barR)
     val tick = rememberTick()
-    val ink = inkColor()
-    val base = modifier.fillMaxWidth().height(if (style == 0) 72.dp else 66.dp)
+    val shape = RoundedCornerShape(26.dp)
     Row(
-        (if (style == 2) base.clip(shape).background(Pal.bgBot.copy(alpha = 0.97f)) else base.glassBar(shape, blur = true))
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+        modifier.fillMaxWidth().height(70.dp)
+            .clip(shape)
+            .background(Color(0xFF111111))
+            .border(1.dp, Color(0x20FFFFFF), shape)
+            .padding(horizontal = 7.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavTabs.forEach { item ->
             val on = item.id == selected
-            val col = when (style) {
-                0 -> if (on) ink else ink.copy(alpha = 0.62f)
-                1 -> if (on) Pal.accent else ink.copy(alpha = 0.55f)
-                else -> if (on) ink else ink.copy(alpha = 0.55f)
-            }
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(24.dp))
-                    .clickable {
-                        tick()
-                        onSelect(item.id)
-                    },
-                contentAlignment = Alignment.Center
+            Row(
+                Modifier.weight(1f).fillMaxHeight()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (on) Color.White else Color.Transparent)
+                    .clickable { tick(); onSelect(item.id) }
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (style == 0) {
-                        Box(
-                            Modifier
-                                .width(58.dp)
-                                .height(30.dp)
-                                .clip(RoundedCornerShape(15.dp))
-                                .background(if (on) Pal.accent.copy(alpha = 0.30f) else Color.Transparent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(item.icon, null, tint = col, modifier = Modifier.size(24.dp))
-                        }
-                    } else {
-                        Icon(item.icon, null, tint = col, modifier = Modifier.size(if (style == 1) 24.dp else 26.dp))
-                    }
-                    if (UiOpts.tabLabels) {
-                        Text(
-                            item.label, fontSize = if (style == 1) 10.sp else 11.sp, color = col,
-                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium
-                        )
-                    }
+                Icon(item.icon, null,
+                    tint = if (on) Color(0xFF090909) else Color(0xFF888888),
+                    modifier = Modifier.size(21.dp))
+                if (on || UiOpts.tabLabels) {
+                    Spacer(Modifier.width(if (on) 7.dp else 0.dp))
+                    Text(item.label, fontSize = 11.sp,
+                        fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                        color = if (on) Color(0xFF090909) else Color(0xFF888888),
+                        maxLines = 1)
                 }
             }
         }

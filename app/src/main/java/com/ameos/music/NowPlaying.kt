@@ -620,8 +620,9 @@ fun NowPlayingScreen(vm: MainViewModel) {
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF1A1A1A),
-                        Color(0xFF090909),
+                        Color(0xFF242424),
+                        Color(0xFF101010),
+                        Color(0xFF050505),
                         Color(0xFF000000)
                     )
                 )
@@ -645,7 +646,7 @@ fun NowPlayingScreen(vm: MainViewModel) {
                 .width(colW)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 22.dp)
         ) {
             // top: close | page title | menu | output
             val outKind = vm.currentOutput?.kind

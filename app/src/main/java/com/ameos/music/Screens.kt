@@ -203,30 +203,34 @@ private fun HomeList(vm: MainViewModel) {
             val hi = if (hour < 5) "Late night" else if (hour < 12) "Good morning"
             else if (hour < 17) "Good afternoon" else if (hour < 22) "Good evening" else "Late night"
             val nm = vm.userName.ifBlank { vm.ytName }
-            Row(
-                Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 18.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 24.dp)
             ) {
-                Box(
-                    Modifier.size(50.dp).clip(CircleShape).glassFill(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ProfileButton(vm, 50.dp, false)
-                }
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Hey there,",
-                        fontSize = 15.sp, color = Pal.textDim, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        "V A M E   /   M O N O", fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold, letterSpacing = 2.4.sp,
+                        color = Color(0xFF929292), modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        if (nm.isBlank()) vm.title.ifBlank { "Music Lover" } else nm,
-                        fontSize = 26.sp, fontWeight = FontWeight.Bold,
-                        color = Pal.fg, letterSpacing = (-0.5).sp, maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    GearButton(vm, 40.dp)
                 }
-                GearButton(vm)
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    if (nm.isBlank()) "YOUR SOUND," else "WELCOME BACK,",
+                    fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.2.sp, color = Color(0xFF777777)
+                )
+                Text(
+                    if (nm.isBlank()) "in focus." else nm,
+                    fontSize = 36.sp, lineHeight = 39.sp, fontWeight = FontWeight.Bold,
+                    color = Color.White, letterSpacing = (-1.4).sp,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
+                Text(
+                    "A soundtrack for right now.", fontSize = 13.sp,
+                    color = Color(0xFF8A8A8A), modifier = Modifier.padding(top = 6.dp)
+                )
             }
         }
         // ---- Dashboard: tiles you use most, now playing strip, quick picks, mixes ----
