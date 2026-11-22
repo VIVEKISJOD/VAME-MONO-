@@ -103,20 +103,113 @@ internal fun ytItems(vm: MainViewModel, sh: YtShelf): List<ShelfItem> = sh.cards
 
 @Composable
 fun HomeScreen(vm: MainViewModel) {
-    // soft glow from the cover of the song you last heard, fading into the background
-    val tint = rememberCoverTint(vm.current?.cover ?: vm.played.firstOrNull()?.cover)
-    Box(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(380.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(tint.copy(alpha = if (Pal.light) 0.38f else if (Pal.lime) 0.14f else if (Pal.amoled) 0.30f else 0.55f), Color.Transparent)
-                    )
-                )
-        )
-        HomeList(vm)
+    LaunchedEffect(Unit) { vm.warmUp() }
+    if (Net.on) { OfflineHome(vm); return }
+    val width = LocalConfiguration.current.screenWidthDp
+    val cardWidth = shelfW()
+    val played = vm.played.toList()
+    val picks = (if (vm.liked.isNotEmpty()) vm.liked.toList() else vm.recommended.take(12))
+    val ytShelves = if (UiOpts.homeYt) vm.ytHome else emptyList()
+    Box(Modifier.fillMaxSize().background(Color(0xFF080808))) {
+        val tint = rememberCoverTint(vm.current?.cover ?: played.firstOrNull()?.cover)
+        Box(Modifier.fillMaxWidth().height(430.dp).background(
+            Brush.verticalGradient(listOf(tint.copy(alpha = 0.20f), Color.Transparent))))
+        LazyColumn(contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 190.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 26.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("V A M E   /   M O N O", color = Color(0xFF8B8B8B), fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 2.8.sp)
+                        Text("SOUND, WITHOUT LIMITS.", color = Color.White, fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold, letterSpacing = 1.8.sp,
+                            modifier = Modifier.padding(top = 9.dp))
+                    }
+                    GearButton(vm, 42.dp)
+                }
+            }
+            item {
+                Column(Modifier.padding(bottom = 20.dp)) {
+                    Text("Your world.\nYour frequency.", color = Color.White, fontSize = 38.sp,
+                        lineHeight = 41.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1.8).sp)
+                    Text("A soundtrack for right now.", color = Color(0xFF929292), fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 9.dp))
+                }
+            }
+            if (vm.current != null) item {
+                val s = vm.current!!
+                val shape = RoundedCornerShape(26.dp)
+                Column(Modifier.fillMaxWidth().clip(shape)
+                    .background(Color(0xFF171717)).border(1.dp, Color(0x20FFFFFF), shape)
+                    .clickable { vm.showPlayer = true }.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("ON YOUR FREQUENCY", color = Color(0xFF929292), fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 2.sp, modifier = Modifier.weight(1f))
+                        Text("NOW PLAYING", color = Color.White, fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Cover(s.cover, Modifier.size(88.dp), RoundedCornerShape(18.dp), hiRes = true)
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(s.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(artistName(s.artist), color = Color(0xFF929292), fontSize = 13.sp,
+                                modifier = Modifier.padding(top = 4.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        IconButton(onClick = { vm.toggle() }) {
+                            Icon(if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                null, tint = Color.White, modifier = Modifier.size(30.dp))
+                        }
+                    }
+                }
+            }
+            item { ShelfTitle("Made for this moment") }
+            item {
+                if (picks.isEmpty()) ShimmerShelf(cardWidth)
+                else CardShelf(picks.take(12).map { songItem(vm, it, picks) }, cardWidth)
+            }
+            if (played.isNotEmpty()) {
+                item { ShelfTitle("Pick up where you left off") }
+                item { CardShelf(played.take(14).map { songItem(vm, it, played) }, cardWidth) }
+            }
+            if (vm.recommendedAlbums.isNotEmpty()) {
+                item { ShelfTitle("Albums worth a listen") }
+                item { CardShelf(vm.recommendedAlbums.map { a ->
+                    ShelfItem(a.cover, a.title, "Album • " + a.artist) { vm.openAlbum(a) }
+                }, cardWidth) }
+            }
+            val quick = vm.recommended.drop(4).take(12)
+            if (quick.isNotEmpty()) {
+                item { ShelfTitle("Quick picks") }
+                item { CardShelf(quick.map { songItem(vm, it, quick) }, cardWidth) }
+            }
+            if (ytShelves.isNotEmpty()) {
+                for (sh in ytShelves) {
+                    item { ShelfTitle(sh.title, sh.sub) }
+                    item { CardShelf(ytItems(vm, sh), cardWidth) }
+                }
+            } else if (UiOpts.homeYt && vm.ytHomeLoading) {
+                item { ShelfTitle("Your YouTube Music") }
+                item { ShimmerShelf(cardWidth) }
+            }
+            if (UiOpts.homeShelves && vm.genreShelves.isNotEmpty()) {
+                for (sh in vm.genreShelves) {
+                    item { ShelfTitle(sh.name) }
+                    item { CardShelf(sh.songs.map { songItem(vm, it, sh.songs) }, cardWidth) }
+                }
+            }
+            val artists = (vm.likedArtists + vm.recap().topArtists.map { ArtistItem(it.name, it.cover) })
+                .distinctBy { it.name.lowercase() }
+            if (artists.isNotEmpty()) {
+                item { ShelfTitle("Your artists") }
+                item { CardShelf(artists.take(18).map { a ->
+                    ShelfItem(a.cover, a.name, "Artist", true) { vm.openArtist(a.name) }
+                }, if (width >= 600) 150.dp else 118.dp) }
+            }
+        }
     }
 }
 
@@ -750,181 +843,136 @@ private fun MoodTile(m: Mood, cover: String?, modifier: Modifier, onClick: () ->
 @Composable
 fun ExploreScreen(vm: MainViewModel) {
     LaunchedEffect(Unit) { vm.loadTiles() }
-    // Back from search results returns to the mood tiles first
     BackHandler(enabled = vm.searched) { vm.clearSearch() }
     val cols = if (LocalConfiguration.current.screenWidthDp >= 600) 3 else 2
     val pool = (vm.recommended + vm.discover + vm.played.toList() + vm.liked.toList())
         .mapNotNull { it.cover }.distinct()
     val flt = remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    LazyColumn(contentPadding = ScreenPad) {
-        item {
-            ScreenTitle("Search") {
-                GearButton(vm, 40.dp)
-            }
-        }
-        item {
-            TextField(
-                value = vm.query,
-                onValueChange = { vm.query = it },
-                placeholder = { Text("Songs, artists, albums...", fontSize = 16.sp) },
-                leadingIcon = { Icon(Icons.Filled.Search, null, modifier = Modifier.size(26.dp)) },
-                trailingIcon = {
-                    if (vm.searched) {
-                        IconButton(onClick = { vm.clearSearch() }) {
-                            Icon(Icons.Filled.Close, null)
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(20.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { vm.search() }),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = if (Pal.light) Color(0xCCFFFFFF) else if (Pal.flat) Pal.surface else Color(0x33FFFFFF),
-                    unfocusedContainerColor = if (Pal.light) Color(0xCCFFFFFF) else if (Pal.flat) Pal.surface else Color(0x33FFFFFF),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp)
-            )
-        }
-        if (vm.searched) {
-            // filter row: All / Songs / Artists / Albums
+    Box(Modifier.fillMaxSize().background(Color(0xFF080808))) {
+        LazyColumn(contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 190.dp)) {
             item {
-                Spacer(Modifier.height(4.dp))
-                KitChips(flt.intValue, listOf("All", "Songs", "Artists", "Albums")) { flt.intValue = it }
-            }
-        }
-        if (vm.loading) {
-            item {
-                Box(Modifier.padding(top = 12.dp)) { ShimmerShelf(shelfW()) }
-            }
-        }
-        if (!vm.searched) {
-            if (vm.recentSearches.isNotEmpty()) {
-                item {
-                    Row(Modifier.fillMaxWidth().padding(top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Recent searches", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Pal.fg, modifier = Modifier.weight(1f))
-                        Text(
-                            "Clear", fontSize = 13.sp, color = Pal.textDim,
-                            modifier = Modifier.clip(RoundedCornerShape(50)).clickable { vm.clearRecent() }
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+                Row(Modifier.fillMaxWidth().padding(bottom = 22.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("FIND YOUR NEXT", color = Color(0xFF8C8C8C), fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 2.5.sp)
+                        Text("Sound.", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold,
+                            letterSpacing = (-1.5).sp, modifier = Modifier.padding(top = 3.dp))
                     }
-                }
-                items(vm.recentSearches.toList()) { r ->
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { vm.searchFor(r) }
-                            .padding(vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Filled.History, null, tint = Pal.textDim, modifier = Modifier.size(22.dp))
-                        Spacer(Modifier.width(14.dp))
-                        Text(r, fontSize = 16.sp, color = Pal.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                        Icon(
-                            Icons.Filled.Close, "Remove", tint = Pal.textDim,
-                            modifier = Modifier.size(32.dp).clip(CircleShape).clickable { vm.removeRecent(r) }.padding(6.dp)
-                        )
-                    }
+                    GearButton(vm, 42.dp)
                 }
             }
             item {
-                Text(
-                    "Browse Categories", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Pal.fg,
-                    modifier = Modifier.padding(top = 22.dp, bottom = 12.dp)
-                )
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFF191919)).border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(18.dp))
+                    .padding(horizontal = 15.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Search, null, tint = Color(0xFF9B9B9B), modifier = Modifier.size(23.dp))
+                    TextField(value = vm.query, onValueChange = { vm.query = it },
+                        placeholder = { Text("Tracks, artists, albums...", color = Color(0xFF777777)) },
+                        trailingIcon = { if (vm.query.isNotEmpty()) IconButton(onClick = { vm.clearSearch() }) {
+                            Icon(Icons.Filled.Close, null, tint = Color.White)
+                        } },
+                        singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { vm.search() }),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = Color.White, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                        modifier = Modifier.weight(1f))
+                }
             }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Moods.chunked(cols).forEachIndexed { r, row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            row.forEachIndexed { c, m ->
-                                val idx = r * cols + c
-                                val cover = if (pool.isEmpty()) null else pool[(idx * 3) % pool.size]
-                                MoodTile(m, cover, Modifier.weight(1f)) { vm.searchFor(m.query) }
+            if (vm.searched) {
+                item { KitChips(flt.intValue, listOf("All", "Songs", "Artists", "Albums")) { flt.intValue = it } }
+                if (vm.loading) item { ShimmerShelf(shelfW()) }
+                val top = vm.results.firstOrNull()
+                if (flt.intValue == 0 && top != null) item {
+                    Column(Modifier.fillMaxWidth().padding(top = 16.dp).clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF191919)).clickable { vm.playOne(top, vm.results) }.padding(15.dp)) {
+                        Text("BEST MATCH", color = Color(0xFF8B8B8B), fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                        Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Cover(top.cover, Modifier.size(88.dp), RoundedCornerShape(16.dp), hiRes = true)
+                            Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                                Text(top.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(artistName(top.artist), color = Color(0xFF999999), fontSize = 13.sp,
+                                    modifier = Modifier.padding(top = 4.dp))
                             }
-                            repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+                            Icon(Icons.Filled.PlayCircleFilled, null, tint = Color.White, modifier = Modifier.size(34.dp))
                         }
                     }
                 }
-            }
-            item { TrendingList(vm) }
-            if (vm.tiles.isNotEmpty()) {
-                item { SectionLabel("Your genres") }
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        vm.tiles.chunked(2).forEachIndexed { r, pair ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                pair.forEachIndexed { c, t ->
-                                    GenreTileView(
-                                        t, TileColors[(r * 2 + c) % TileColors.size], Modifier.weight(1f)
-                                    ) { vm.searchFor(t.name + " music") }
-                                }
-                                if (pair.size == 1) Spacer(Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            val fa = flt.intValue
-            // top result: the first song as one big card
-            val top = vm.results.firstOrNull()
-            if (fa == 0 && top != null) {
-                item {
-                    val shape = RoundedCornerShape(22.dp)
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                            .pressScale(0.98f)
-                            .clip(shape)
-                            .glassFill()
-                            .border(1.dp, Stroke, shape)
-                            .clickable { vm.playOne(top, vm.results) }
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Cover(top.cover, Modifier.size(92.dp), RoundedCornerShape(16.dp), hiRes = true)
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("TOP RESULT", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp, color = Pal.textDim)
-                            Text(
-                                top.title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Pal.fg,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp)
-                            )
-                            Text("Song \u2022 " + artistName(top.artist), fontSize = 13.sp, color = Pal.textDim, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        Box(
-                            Modifier.size(48.dp).clip(CircleShape).background(Pal.accent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, null, tint = Pal.onAccent, modifier = Modifier.size(28.dp))
-                        }
-                    }
-                }
-            }
-            if ((fa == 0 || fa == 2) && vm.artistResults.isNotEmpty()) {
-                item { SectionLabel("Artists") }
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                if ((flt.intValue == 0 || flt.intValue == 2) && vm.artistResults.isNotEmpty()) {
+                    item { ShelfTitle("Artists") }
+                    item { LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         items(vm.artistResults) { a -> SearchArtistCard(a, vm) }
-                    }
+                    } }
                 }
-            }
-            if ((fa == 0 || fa == 3) && vm.albumResults.isNotEmpty()) {
-                item { SectionLabel("Albums") }
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if ((flt.intValue == 0 || flt.intValue == 3) && vm.albumResults.isNotEmpty()) {
+                    item { ShelfTitle("Albums") }
+                    item { LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         items(vm.albumResults) { a -> AlbumCard(a, vm) }
+                    } }
+                }
+                if (flt.intValue == 0 || flt.intValue == 1) {
+                    item { ShelfTitle("Tracks") }
+                    items(vm.results) { s -> SongRow(s, vm, vm.results, true) }
+                }
+            } else {
+                if (vm.recentSearches.isNotEmpty()) {
+                    item {
+                        Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Text("RECENT SEARCHES", color = Color(0xFF8B8B8B), fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold, letterSpacing = 2.sp, modifier = Modifier.weight(1f))
+                            Text("Clear", color = Color.White, fontSize = 12.sp,
+                                modifier = Modifier.clickable { vm.clearRecent() }.padding(8.dp))
+                        }
+                    }
+                    items(vm.recentSearches.toList()) { r ->
+                        Row(Modifier.fillMaxWidth().clickable { vm.searchFor(r) }.padding(vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.History, null, tint = Color(0xFF888888))
+                            Text(r, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                            Icon(Icons.Filled.NorthWest, null, tint = Color(0xFF777777))
+                        }
                     }
                 }
-            }
-            if ((fa == 0 || fa == 1) && vm.results.isNotEmpty()) {
-                item { SectionLabel("Songs") }
-            }
-            if (fa == 0 || fa == 1) {
-                items(vm.results) { s -> SongRow(s, vm, vm.results, true) }
+                item {
+                    Text("EXPLORE BY MOOD", color = Color(0xFF8B8B8B), fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
+                        modifier = Modifier.padding(top = 28.dp, bottom = 14.dp))
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                        Moods.chunked(cols).forEachIndexed { r, row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+                                row.forEachIndexed { c, m ->
+                                    val idx = r * cols + c
+                                    val cover = if (pool.isEmpty()) null else pool[(idx * 3) % pool.size]
+                                    MoodTile(m, cover, Modifier.weight(1f)) { vm.searchFor(m.query) }
+                                }
+                                repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
+                }
+                item { TrendingList(vm) }
+                if (vm.tiles.isNotEmpty()) {
+                    item { ShelfTitle("Your genres") }
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            vm.tiles.chunked(2).forEachIndexed { r, pair ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    pair.forEachIndexed { c, t ->
+                                        GenreTileView(t, TileColors[(r * 2 + c) % TileColors.size],
+                                            Modifier.weight(1f)) { vm.searchFor(t.name + " music") }
+                                    }
+                                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
