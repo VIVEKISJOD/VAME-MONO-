@@ -9,11 +9,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.ameos.music"
+        applicationId = "com.ameos.music.mono"
         minSdk = 26
         targetSdk = 34
-        versionCode = 76
-        versionName = "0.44.0"
+        versionCode = 77
+        versionName = "0.45.0"
     }
 
     // Same signing key for every update (stored as GitHub secrets), so the app can update itself.

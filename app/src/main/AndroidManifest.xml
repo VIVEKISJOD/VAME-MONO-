@@ -25,7 +25,7 @@
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/tv_banner"
-        android:label="VAME"
+        android:label="VAME MONO"
         android:theme="@style/Theme.Vame">
 
         <activity

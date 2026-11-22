@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit
 object Updater {
 
     private const val RELEASE_API =
-        "https://api.github.com/repos/VIVEKISJOD/VAME-MUSIC-PLAYER/releases/latest"
+        "https://api.github.com/repos/VIVEKISJOD/VAME-MONO-/releases/latest"
 
     data class Info(val version: String, val notes: String, val apkUrl: String)
 
@@ -56,7 +56,7 @@ object Updater {
         val req = Request.Builder()
             .url(RELEASE_API)
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "VAME-music-app")
+            .header("User-Agent", "VAME-MONO-app")
             .build()
         client.newCall(req).execute().use { r ->
             if (r.code == 404) return@withContext null // no release published yet
@@ -101,7 +101,7 @@ object Updater {
     fun needsInstallPermission(app: Context): Boolean {
         if (Build.VERSION.SDK_INT >= 26 && !app.packageManager.canRequestPackageInstalls()) {
             Toast.makeText(
-                app, "Allow VAME to install updates, then tap Update again", Toast.LENGTH_LONG
+                app, "Allow VAME MONO to install updates, then tap Update again", Toast.LENGTH_LONG
             ).show()
             try {
                 app.startActivity(
@@ -111,7 +111,7 @@ object Updater {
                     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 )
             } catch (e: Exception) {
-                Toast.makeText(app, "Open Settings > Apps > VAME > Install unknown apps", Toast.LENGTH_LONG).show()
+                Toast.makeText(app, "Open Settings > Apps > VAME MONO > Install unknown apps", Toast.LENGTH_LONG).show()
             }
             return true
         }
